@@ -1,76 +1,97 @@
-Function Add-CleanupRegistryValues {
+function Add-CleanupRegistryValues {
     <#
-        .NAME
+        .SYNOPSIS
+        Adds the registry values needed to use disk cleaner without the GUI.
 
-        Add-CleanupRegistryValues
-        .DESCRIPTION
-        
+        .DESCRIPTION        
         This function is used to generate the registry values needed in order for disk cleanup to be run without user interraction in the GUI.
-        .Example
 
+        .Example
         Add-CleanupRegistryValues
+
         .Example
-
         Add-CleanupRegistryValues -regValueName "0095"
-        .registryValue
 
+        .PARAMETER registryValue
         Enter a number from 0001-9999 here. For more information, see the related links.
-        .RELATED LINKS
 
+        .LINK
         https://support.microsoft.com/en-us/help/253597/automating-disk-cleanup-tool-in-windows
+
+        .LINK
+        Github source: https://github.com/SnoozingPinata/DiskCleaner
+
+        .LINK
+        Author's website: www.samuelmelton.com
     #>
 
     [CmdletBinding()]
-    PARAM(
+    Param(
         [string]$registryValue = "0099"
     )
 
-    BEGIN {
-        $regValueName = "StateFlags" + $($registryValue)
+    Begin {
     }
 
-    PROCESS {
+    Process {
+        $regValueName = "StateFlags" + $($registryValue)
+
         $parentRegPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches'
         Get-ChildItem -Path $parentRegPath -Force | ForEach-Object -Process {
             New-ItemProperty -Path $_.PSPath -Name $regValueName -Value 2 -PropertyType "DWord" -Force
         }
+    }
+
+    End {
     }
 }
 
 
 Function Enter-CleanupSession {
     <#
-        .NAME
+        .SYNOPSIS
+        Runs disk cleaner without requiring GUI interraction.
         
-        Enter-CleanupSession
         .DESCRIPTION
-
         This is meant to be used after the Add-CleanupRegistryValues function in order to launch an automated version of Disk Cleanup.
+
         .EXAMPLE
-
         Enter-CleanupSession
-        .RELATED LINKS
 
-        https://support.microsoft.com/en-us/help/253597/automating-disk-cleanup-tool-in-windows     
+        .LINK
+        https://support.microsoft.com/en-us/help/253597/automating-disk-cleanup-tool-in-windows
+
+        .LINK
+        Github source: https://github.com/SnoozingPinata/DiskCleaner
+
+        .LINK
+        Author's website: www.samuelmelton.com
     #>
 
     [CmdletBinding()]
-    PARAM (
-        [string]$sageRunInput = "99",
-        [parameter(ValueFromPipelineByPropertyName=$True)]
-        [string]$path = 'C:\Windows\System32\cleanmgr.exe'
+    Param (
+        [Parameter()]
+        [string]$SageRunInput = "99",
+
+        [Parameter(
+            ValueFromPipelineByPropertyName=$True)]
+        [string]$Path = 'C:\Windows\System32\cleanmgr.exe'
     )
 
-    BEGIN {
-        $sageRunValue = '/sagerun:' + $($sageRunInput)
+    Begin {
     }
 
-    PROCESS {
+    Process {
+        $sageRunValue = '/sagerun:' + $($SageRunInput)
+
         try {
-            Start-Process -FilePath $path -ArgumentList $sageRunValue -Verb RunAs -ErrorAction Stop
+            Start-Process -FilePath $Path -ArgumentList $sageRunValue -Verb RunAs -ErrorAction Stop
         }
         catch {
-            Write-Host "Could not start process. You likely need to set a path for cleanmgr.exe"
+            Write-Verbose "Could not start process. You likely need to set a path for cleanmgr.exe"
         }
+    }
+
+    End {
     }
 }
